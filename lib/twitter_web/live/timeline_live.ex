@@ -30,14 +30,42 @@ defmodule TwitterWeb.TimelineLive do
         </div>
 
         <div class="flex flex-row justify-between items-center">
-          <div></div>
+          <div>
+            <%= case @content |> String.length() do %>
+              <% length when length < 100 -> %>
+                <span class="text-green-500 border border-green-500 text-md font-semibold py-1 px-1.5 rounded-full">
+                  {length}
+                </span>
+              <% length when length <= 140 -> %>
+                <span class="text-yellow-500 border border-yellow-500 text-md font-semibold py-1 px-1.5 rounded-full">
+                  {length}
+                </span>
+              <% length when length > 140 -> %>
+                <span class="text-red-500 border border-red-500 text-md font-semibold py-1 px-1.5 rounded-full">
+                  {length}
+                </span>
+            <% end %>
+          </div>
 
-          <button
-            type="button"
-            class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium tracking-wide text-white transition-colors duration-200 rounded-md bg-neutral-950 hover:bg-neutral-900 focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900 focus:shadow-outline focus:outline-none"
-          >
-            트윗!
-          </button>
+          <div>
+            <%= if @content |> String.length() <= 140 do %>
+              <button
+                type="button"
+                class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium tracking-wide text-white transition-colors duration-200 rounded-md bg-neutral-950 hover:bg-neutral-900 focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900 focus:shadow-outline focus:outline-none"
+                phx-click="tweet"
+              >
+                트윗!
+              </button>
+            <% else %>
+              <button
+                disabled
+                type="button"
+                class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium tracking-wide transition-colors duration-200 bg-white border rounded-md text-neutral-500 active:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-200/60 focus:shadow-outline"
+              >
+                너무 길어요...
+              </button>
+            <% end %>
+          </div>
         </div>
       </form>
     </div>
