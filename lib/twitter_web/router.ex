@@ -18,6 +18,8 @@ defmodule TwitterWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+
+    live "/timeline", TimelineLive
   end
 
   # Other scopes may use custom stacks.
