@@ -4,12 +4,16 @@ defmodule TwitterWeb.TimelineLive do
   def render(assigns) do
     ~H"""
     <div class="px-2">
-      <div class="w-full mx-auto pt-2 flex flex-col gap-2">
+      <form class="w-full mx-auto pt-2 flex flex-col gap-2">
         <div>
           <input
             type="text"
             placeholder="닉네임"
+            name="nickname"
+            value={@nickname}
             class="flex h-10 px-3 py-2 text-sm bg-white border rounded-md border-neutral-300 ring-offset-background placeholder:text-neutral-500 focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
+            phx-change="nickname_changed"
+            phx-debounce="500"
           />
         </div>
 
@@ -17,7 +21,11 @@ defmodule TwitterWeb.TimelineLive do
           <textarea
             type="text"
             placeholder="무슨 일이 일어나고 있나요?"
+            name="content"
+            value={@content}
             class="flex w-full h-auto min-h-[80px] px-3 py-2 text-sm bg-white border rounded-md border-neutral-300 placeholder:text-neutral-400 focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
+            phx-change="content_changed"
+            phx-debounce="100"
           ></textarea>
         </div>
 
@@ -31,12 +39,24 @@ defmodule TwitterWeb.TimelineLive do
             트윗!
           </button>
         </div>
-      </div>
+      </form>
     </div>
     """
   end
 
   def mount(_params, _session, socket) do
-    {:ok, socket}
+    {:ok, assign(socket, nickname: "", content: "")}
+  end
+
+  def handle_event(
+        "nickname_changed",
+        %{"_target" => ["nickname"], "nickname" => nickname},
+        socket
+      ) do
+    {:noreply, assign(socket, nickname: nickname)}
+  end
+
+  def handle_event("content_changed", %{"_target" => ["content"], "content" => content}, socket) do
+    {:noreply, assign(socket, content: content)}
   end
 end
