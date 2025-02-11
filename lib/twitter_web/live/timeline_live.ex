@@ -48,22 +48,23 @@ defmodule TwitterWeb.TimelineLive do
           </div>
 
           <div>
-            <%= if @content |> String.length() <= 140 do %>
-              <button
-                type="button"
-                class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium tracking-wide text-white transition-colors duration-200 rounded-md bg-neutral-950 hover:bg-neutral-900 focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900 focus:shadow-outline focus:outline-none"
-                phx-click="tweet"
-              >
-                트윗!
-              </button>
-            <% else %>
-              <button
-                disabled
-                type="button"
-                class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium tracking-wide transition-colors duration-200 bg-white border rounded-md text-neutral-500 active:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-200/60 focus:shadow-outline"
-              >
-                너무 길어요...
-              </button>
+            <%= case @validate do %>
+              <% {:ok, button_name} -> %>
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium tracking-wide text-white transition-colors duration-200 rounded-md bg-neutral-950 hover:bg-neutral-900 focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900 focus:shadow-outline focus:outline-none"
+                  phx-click="tweet"
+                >
+                  {button_name}
+                </button>
+              <% {:error, error_message} -> %>
+                <button
+                  disabled
+                  type="button"
+                  class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium tracking-wide transition-colors duration-200 bg-white border rounded-md text-neutral-500 active:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-200/60 focus:shadow-outline"
+                >
+                  {error_message}
+                </button>
             <% end %>
           </div>
         </div>
@@ -73,7 +74,7 @@ defmodule TwitterWeb.TimelineLive do
   end
 
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, nickname: "", content: "")}
+    {:ok, assign(socket, nickname: "", content: "", validate: validate("", ""))}
   end
 
   def handle_event(
@@ -81,10 +82,32 @@ defmodule TwitterWeb.TimelineLive do
         %{"_target" => ["nickname"], "nickname" => nickname},
         socket
       ) do
-    {:noreply, assign(socket, nickname: nickname)}
+    {:noreply,
+     assign(socket,
+       nickname: nickname,
+       validate: validate(nickname, socket.assigns.content)
+     )}
   end
 
   def handle_event("content_changed", %{"_target" => ["content"], "content" => content}, socket) do
-    {:noreply, assign(socket, content: content)}
+    {:noreply,
+     assign(socket, content: content, validate: validate(socket.assigns.nickname, content))}
+  end
+  end
+
+  defp validate("", _) do
+    {:error, "닉네임이 없어요..."}
+  end
+
+  defp validate(_, "") do
+    {:error, "내용이 없어요..."}
+  end
+
+  defp validate(nickname, content) when byte_size(content) > 420 do
+    {:error, "너무 길어요..."}
+  end
+
+  defp validate(nickname, content) do
+    {:ok, "트윗!"}
   end
 end
