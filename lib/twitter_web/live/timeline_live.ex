@@ -74,7 +74,7 @@ defmodule TwitterWeb.TimelineLive do
   end
 
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, nickname: "", content: "", validate: validate("", ""))}
+    {:ok, assign(socket, nickname: "", content: "", validate: validate("", ""), tweets: [])}
   end
 
   def handle_event(
@@ -93,6 +93,20 @@ defmodule TwitterWeb.TimelineLive do
     {:noreply,
      assign(socket, content: content, validate: validate(socket.assigns.nickname, content))}
   end
+
+  def handle_event("tweet", _params, socket) do
+    tweet = %{
+      "nickname" => socket.assigns.nickname,
+      "content" => socket.assigns.content,
+      "created_at" => DateTime.utc_now()
+    }
+
+    {:noreply,
+     assign(socket,
+       content: "",
+       validate: validate(socket.assigns.nickname, ""),
+       tweets: [tweet | socket.assigns.tweets]
+     )}
   end
 
   defp validate("", _) do
