@@ -1,6 +1,8 @@
 defmodule TwitterWeb.TimelineLive do
   use TwitterWeb, :live_view
 
+  @topic "timeline"
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -110,9 +112,12 @@ defmodule TwitterWeb.TimelineLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    if connected?(socket), do: Phoenix.PubSub.subscribe(Twitter.PubSub, @topic)
+
     {:ok,
      socket
      |> assign(
+       socket_id: Ecto.UUID.generate(),
        nickname: "",
        content: "",
        validate: validate("", "")
@@ -143,13 +148,28 @@ defmodule TwitterWeb.TimelineLive do
   def handle_event("tweet", _params, socket) do
     tweet = Twitter.Tweets.tweet(socket.assigns.nickname, socket.assigns.content)
 
+    Phoenix.PubSub.broadcast(Twitter.PubSub, @topic, {:tweet, tweet, socket.assigns.socket_id})
+
     {:noreply,
      socket
+     |> put_flash(:info, "트윗 성공!")
      |> assign(
        content: "",
        validate: validate(tweet.nickname, "")
      )
      |> stream_insert(:tweets, tweet, at: 0)}
+  end
+
+  @impl true
+  def handle_info({:tweet, tweet, socket_id}, socket) do
+    if socket.assigns.socket_id == socket_id do
+      {:noreply, socket}
+    else
+      {:noreply,
+       socket
+       |> put_flash(:info, "새 트윗 도착!")
+       |> stream_insert(:tweets, tweet, at: 0)}
+    end
   end
 
   defp validate("", _) do
