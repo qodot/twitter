@@ -1,6 +1,7 @@
 defmodule TwitterWeb.TimelineLive do
   use TwitterWeb, :live_view
 
+  @impl true
   def render(assigns) do
     ~H"""
     <div class="px-2">
@@ -13,7 +14,7 @@ defmodule TwitterWeb.TimelineLive do
             value={@nickname}
             class="flex h-10 px-3 py-2 text-sm bg-white border rounded-md border-neutral-300 ring-offset-background placeholder:text-neutral-500 focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
             phx-change="nickname_changed"
-            phx-debounce="500"
+            phx-debounce="200"
           />
         </div>
 
@@ -75,7 +76,7 @@ defmodule TwitterWeb.TimelineLive do
           <blockquote class="w-full border border-neutral-200 rounded-lg p-5">
             <p class="text-gray-800">
               <em>
-                {tweet["content"]}
+                {tweet.content}
               </em>
             </p>
 
@@ -90,10 +91,10 @@ defmodule TwitterWeb.TimelineLive do
                 </div>
                 <div class="ml-3">
                   <div class="text-base font-semibold text-gray-800">
-                    {tweet["nickname"]}
+                    {tweet.nickname}
                   </div>
                   <div class="text-xs text-gray-500">
-                    {tweet["created_at"] |> DateTime.to_string() |> String.slice(0, 19)}
+                    {tweet.inserted_at |> DateTime.to_string() |> String.slice(0, 19)}
                   </div>
                 </div>
               </div>
@@ -105,10 +106,18 @@ defmodule TwitterWeb.TimelineLive do
     """
   end
 
+  @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, nickname: "", content: "", validate: validate("", ""), tweets: [])}
+    {:ok,
+     assign(socket,
+       nickname: "",
+       content: "",
+       validate: validate("", ""),
+       tweets: Twitter.Tweets.timeline()
+     )}
   end
 
+  @impl true
   def handle_event(
         "nickname_changed",
         %{"_target" => ["nickname"], "nickname" => nickname},
@@ -121,22 +130,20 @@ defmodule TwitterWeb.TimelineLive do
      )}
   end
 
+  @impl true
   def handle_event("content_changed", %{"_target" => ["content"], "content" => content}, socket) do
     {:noreply,
      assign(socket, content: content, validate: validate(socket.assigns.nickname, content))}
   end
 
+  @impl true
   def handle_event("tweet", _params, socket) do
-    tweet = %{
-      "nickname" => socket.assigns.nickname,
-      "content" => socket.assigns.content,
-      "created_at" => DateTime.utc_now()
-    }
+    tweet = Twitter.Tweets.tweet(socket.assigns.nickname, socket.assigns.content)
 
     {:noreply,
      assign(socket,
        content: "",
-       validate: validate(socket.assigns.nickname, ""),
+       validate: validate(tweet.nickname, ""),
        tweets: [tweet | socket.assigns.tweets]
      )}
   end
@@ -149,11 +156,11 @@ defmodule TwitterWeb.TimelineLive do
     {:error, "내용이 없어요..."}
   end
 
-  defp validate(nickname, content) when byte_size(content) > 420 do
+  defp validate(_nickname, content) when byte_size(content) > 420 do
     {:error, "너무 길어요..."}
   end
 
-  defp validate(nickname, content) do
+  defp validate(_nickname, _content) do
     {:ok, "트윗!"}
   end
 end
