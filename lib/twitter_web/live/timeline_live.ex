@@ -71,36 +71,38 @@ defmodule TwitterWeb.TimelineLive do
         </div>
       </form>
 
-      <div class="flex flex-col gap-2 mt-10 p-3">
-        <%= for tweet <- @tweets do %>
-          <blockquote class="w-full border border-neutral-200 rounded-lg p-5">
-            <p class="text-gray-800">
-              <em>
-                {tweet.content}
-              </em>
-            </p>
+      <div id="timeline-streams-tweets" class="flex flex-col gap-2 mt-10 p-3" phx-update="stream">
+        <blockquote
+          :for={{id, tweet} <- @streams.tweets}
+          id={id}
+          class="w-full border border-neutral-200 rounded-lg p-5"
+        >
+          <p class="text-gray-800">
+            <em>
+              {tweet.content}
+            </em>
+          </p>
 
-            <footer class="mt-3">
-              <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <img
-                    class="w-10 h-10 rounded-full"
-                    src="https://cdn.devdojo.com/images/june2023/johndoe.png"
-                    alt="John Doe"
-                  />
+          <footer class="mt-3">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <img
+                  class="w-10 h-10 rounded-full"
+                  src="https://cdn.devdojo.com/images/june2023/johndoe.png"
+                  alt="John Doe"
+                />
+              </div>
+              <div class="ml-3">
+                <div class="text-base font-semibold text-gray-800">
+                  {tweet.nickname}
                 </div>
-                <div class="ml-3">
-                  <div class="text-base font-semibold text-gray-800">
-                    {tweet.nickname}
-                  </div>
-                  <div class="text-xs text-gray-500">
-                    {tweet.inserted_at |> DateTime.to_string() |> String.slice(0, 19)}
-                  </div>
+                <div class="text-xs text-gray-500">
+                  {tweet.inserted_at |> DateTime.to_string() |> String.slice(0, 19)}
                 </div>
               </div>
-            </footer>
-          </blockquote>
-        <% end %>
+            </div>
+          </footer>
+        </blockquote>
       </div>
     </div>
     """
@@ -109,12 +111,13 @@ defmodule TwitterWeb.TimelineLive do
   @impl true
   def mount(_params, _session, socket) do
     {:ok,
-     assign(socket,
+     socket
+     |> assign(
        nickname: "",
        content: "",
-       validate: validate("", ""),
-       tweets: Twitter.Tweets.timeline()
-     )}
+       validate: validate("", "")
+     )
+     |> stream(:tweets, Twitter.Tweets.timeline())}
   end
 
   @impl true
@@ -141,11 +144,12 @@ defmodule TwitterWeb.TimelineLive do
     tweet = Twitter.Tweets.tweet(socket.assigns.nickname, socket.assigns.content)
 
     {:noreply,
-     assign(socket,
+     socket
+     |> assign(
        content: "",
-       validate: validate(tweet.nickname, ""),
-       tweets: [tweet | socket.assigns.tweets]
-     )}
+       validate: validate(tweet.nickname, "")
+     )
+     |> stream_insert(:tweets, tweet, at: 0)}
   end
 
   defp validate("", _) do
